@@ -1,0 +1,23 @@
+- name: cluster init 
+  shell: kubeadm init --config /etc/kubernetes/config.yaml
+
+# добавляем переменную для root, чтобы можно было выполнять kubectl
+- name: add variables in /root/.bashrc
+  lineinfile:
+    path: "/root/.bashrc"
+    line: "export KUBECONFIG=/etc/kubernetes/admin.conf"
+
+- name: read new root variables
+  shell:
+    cmd: source ~/.bashrc
+    executable: /bin/bash
+
+- name: get kubectl version
+  shell:
+    cmd: kubectl --kubeconfig /etc/kubernetes/admin.conf version | base64 | tr -d '\n' 
+  register: kubectl_version
+
+- name: deploy a pod network to the cluster
+  shell:
+    cmd: /usr/bin/kubectl --kubeconfig /etc/kubernetes/admin.conf apply -f "https://cloud.weave.works/k8s/net?k8s-version={{ kubectl_version.stdout }}"
+    chdir: /etc/kubernetes/

@@ -1,0 +1,17 @@
+---
+# определяем один из 3-х модулей, которые можно заменить
+- name: get clusterroles
+  shell:
+    cmd: kubectl get clusterroles
+    executable: /bin/bash
+  register: all_clusterroles
+
+# запуск удаления старого cni
+- name: delete old cni
+  import_tasks: delete_cni.yml
+
+# запуск установки нового cni
+# имя модуля задается переменной или если ничего не задано,
+# то ставиться waeve
+- name: install new cni
+  import_tasks: install_cni.yml

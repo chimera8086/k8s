@@ -1,0 +1,12 @@
+---
+# удаление weave
+- name: kubectl version
+  shell:
+    cmd: kubectl version | base64 | tr -d '\n'
+    executable: /bin/bash
+  register: kubectl_version
+
+- name: delete weave
+  shell:
+    cmd: kubectl delete -f "https://cloud.weave.works/k8s/net?k8s-version={{ kubectl_version.stdout }}"
+    executable: /bin/bash

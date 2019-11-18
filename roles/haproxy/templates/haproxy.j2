@@ -1,0 +1,31 @@
+global
+defaults
+    mode http
+    log global
+    retries 2
+    timeout connect 3000ms
+    timeout server 5m
+    timeout client 5m
+resolvers k8s-DNS 
+    {% set dns_list = dns_serv.stdout.split('\n') %}
+    {%- for dns in dns_list -%}
+nameserver dns_{{dns}} {{dns}}:53
+    {% endfor -%}
+    resolve_retries 5
+    timeout retry   3s
+    hold valid    5s
+    hold other    5s
+    hold refused  5s
+    hold timeout  5s
+frontend kubernetes
+    bind *:{{kube_api_port}}
+    mode tcp
+    default_backend kubernetes-master-nodes
+backend kubernetes-master-nodes
+    mode tcp
+    option tcp-check
+    balance roundrobin
+    default-server inter 10s downinter 5s rise 2 fall 2 slowstart 60s maxconn 250 maxqueue 256 weight 100
+    {% for host in groups['k8s-master'] %}
+server {{host}} {{host}}:{{kube_api_port}} resolvers k8s-DNS 
+    {% endfor %}

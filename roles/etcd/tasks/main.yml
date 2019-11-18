@@ -1,0 +1,67 @@
+---
+- name: Install python3-pip
+  apt:
+    name: python3-pip
+    state: present
+    install_recommends: yes
+    update_cache: yes
+
+- name: Install Docker Module for Python
+  pip:
+    name: docker
+
+- name: create data directories for container
+  file:
+    path: "{{ item }}"
+    state: directory
+  with_items:
+    - "/usr/local/etcd"
+    - "/usr/src/docker_etcd"
+
+- name: Create a volume etcd
+  docker_volume:
+    name: etcd-data
+
+# копируем Dockerfile
+- name: copy Dockerfile
+  copy:
+    src: "{{ role_path }}/files/Dockerfile"
+    dest: "/usr/src/docker_etcd/"
+
+# собираем образ
+- name: build docker image
+  docker_image:
+    name: "etcd:{{ virsion }}"
+    build:
+      path: /usr/src/docker_etcd/
+      args:
+        VERSION: "{{ virsion }}"
+    source: build
+
+- name: Cluster vars
+  set_fact: 
+    initial_cluster: |
+       {% set my_string = [] %}
+       {%- for host in groups['etcd'] -%}
+       {{ my_string.append(host+"=http://"+ hostvars[host]['ansible_default_ipv4']['address'] +":"+etcd_port) }}
+       {%- endfor-%}
+       {{my_string|join(',') }}
+
+- name: Start etcd container
+  docker_container:
+    name: "etcd"
+    image: "etcd:{{ virsion }}"
+    state: started
+    restart_policy: always
+    volumes:
+      - etcd-data:/usr/local/etcd
+    network_mode: host
+    command: /usr/bin/etcd --data-dir=/usr/local/etcd 
+      --name {{ansible_hostname}} 
+      --initial-advertise-peer-urls http://{{ansible_default_ipv4['address']}}:{{etcd_port}} 
+      --listen-peer-urls http://{{ansible_default_ipv4['address']}}:{{etcd_port}} 
+      --listen-client-urls http://{{ansible_default_ipv4['address']}}:{{etcd_client}},http://127.0.0.1:{{etcd_client}} 
+      --advertise-client-urls http://{{ansible_default_ipv4['address']}}:{{etcd_client}} 
+      --initial-cluster-token {{token}} 
+      --initial-cluster-state new 
+      --initial-cluster {{initial_cluster}}

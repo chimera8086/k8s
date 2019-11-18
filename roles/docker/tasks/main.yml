@@ -1,0 +1,50 @@
+# установка доп софта для установки докера
+- name: install other packet
+  apt:
+    state: present
+    pkg: 
+      - apt-transport-https
+      - ca-certificates
+      - gnupg2
+      - software-properties-common
+      - curl
+    update_cache: yes
+
+# репа докера - качаем ключ
+- name: repo key add
+  apt_key:
+    url: https://download.docker.com/linux/{{ansible_lsb.id|lower}}/gpg
+    state: present
+
+# репа докера - добавляем адрес
+- name: repo add
+  apt_repository:
+    repo: deb [arch=amd64] https://download.docker.com/linux/{{ansible_lsb.id|lower}} {{ansible_distribution_release}} stable
+    state: present
+    filename: docker
+    update_cache: yes
+
+# установка самого докера
+- name: install docker
+  apt:
+    state: present
+    pkg:
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
+    install_recommends: yes
+
+# файл с настройкой работы cgroups
+- name: deamon.json
+  copy:
+    src:  "{{ role_path }}/files/daemon.json"
+    dest: "/etc/docker/daemon.json"
+  register: file_copy
+
+# подхватить изменения, если файл изменили
+- name: restart docker service
+  systemd:
+    name: docker
+    state: restarted
+    enabled: yes
+  when: file_copy.changed

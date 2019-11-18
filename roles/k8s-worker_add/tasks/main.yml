@@ -1,0 +1,20 @@
+# сохраняем команду для присоединения узла к кластеру
+- name: get kubectl join command 
+  shell:
+    cmd: kubeadm token create --print-join-command
+    executable: /bin/bash
+  register: join
+  delegate_to: "{{ groups['k8s-master']| first }}"
+
+# проверяем, что хост не в кластере
+- name: check worker in cluster
+  shell:
+    cmd: /usr/bin/kubectl get nodes |awk '{print $1}' |grep "^{{inventory_hostname}}$" |wc -l
+  register: worker_in_cluster
+  delegate_to: "{{ groups['k8s-master']| first }}"
+
+# если не нашли себя в узлах кластера - добавляем
+- name: add new worker
+  shell:
+    cmd: "{{ join.stdout }} "
+  when: worker_in_cluster.stdout == "0"

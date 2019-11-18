@@ -1,0 +1,12 @@
+---
+- name: Find weave-net network mod
+  include_tasks: "{{ role_path }}/tasks/delete/delete_weave.yml"
+  when: '"weave-net" in all_clusterroles.stdout'
+
+- name: Find calico network mod
+  include_tasks: "{{ role_path }}/tasks/delete/delete_calico.yml"
+  when: '"calico-node" in all_clusterroles.stdout'
+
+- name: Find flannel network mod
+  include_tasks: "{{ role_path }}/tasks/delete/delete_flannel.yml"
+  when: '"flannel" in all_clusterroles.stdout'

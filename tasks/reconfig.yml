@@ -1,0 +1,6 @@
+---
+- name: developer role
+  hosts: k8s-master
+  roles:
+    - ../roles/change_cni
+  run_once: true

@@ -1,0 +1,11 @@
+---
+# скачать файл-конфиг 
+- name: Download flannel.yml
+  get_url:
+    url: https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
+    dest: /etc/kubernetes/flannel.yml
+
+- name: Install flannel
+  shell:
+    cmd: kubectl apply -f /etc/kubernetes/flannel.yml
+    executable: /bin/bash

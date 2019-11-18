@@ -1,0 +1,13 @@
+---
+# выбор CNI для установки
+- name: include Calico
+  include_tasks: "{{ role_path }}/tasks/install/calico.yml"
+  when: '"calico" in install_cni'
+
+- name: include Calico
+  include_tasks: "{{ role_path }}/tasks/install/waeve.yml"
+  when: '"waeve" in install_cni'
+
+- name: include Calico
+  include_tasks: "{{ role_path }}/tasks/install/flannel.yml"
+  when: '"flannel" in install_cni'

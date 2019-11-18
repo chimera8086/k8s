@@ -1,0 +1,43 @@
+---
+- name: Download calico.yaml
+  get_url:
+    url: https://docs.projectcalico.org/manifests/flannel-migration/calico.yaml
+    dest: /etc/kubernetes/calico.yaml
+
+# устанавливаем сеть для 
+- name: Set POD network for calico - CALICO_IPV4POOL_CIDR
+  lineinfile:
+    path: /etc/kubernetes/calico.yaml
+    regexp: '# - name: CALICO_IPV4POOL_CIDR'
+    line: '            - name: CALICO_IPV4POOL_CIDR'
+
+# если переменная не переопределена при старте,
+# то берет значение из файла inventory
+- name: Set POD network for calico - value
+  lineinfile:
+    path: /etc/kubernetes/calico.yaml
+    regex: '#   value: "192.168.0.0/16"'
+    line: '              value: "{{ kube_pod_net_calico }}"'
+
+- name: Install calico
+  shell:
+    cmd: kubectl apply -f /etc/kubernetes/calico.yaml
+    executable: /bin/bash
+
+- name: Start the migration controller
+  shell:
+    cmd: kubectl apply -f https://docs.projectcalico.org/manifests/flannel-migration/migration-job.yaml
+    executable: /bin/bash
+
+- name: Monitor the migration
+  shell:
+    cmd: kubectl get jobs -n kube-system flannel-migration
+    executable: /bin/bash
+
+- name: Delete the migration controller
+  shell:
+    cmd: kubectl delete -f https://docs.projectcalico.org/manifests/flannel-migration/migration-job.yaml
+    executable: /bin/bash
+
+- name: Finish playbook
+  meta: end_play

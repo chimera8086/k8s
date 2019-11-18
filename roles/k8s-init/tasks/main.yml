@@ -1,0 +1,11 @@
+---
+- name: copy claster config
+  template:
+    src: "{{ role_path }}/templates/kub_conf.j2"
+    dest: /etc/kubernetes/config.yaml
+
+# создаем кластер с первым мастером и сохраняем имя машины
+- name: k8s cluster init
+  import_tasks: cluster_init.yml
+  run_once: true
+  when: inventory_hostname in groups['k8s-master']

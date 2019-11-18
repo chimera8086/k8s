@@ -1,0 +1,56 @@
+---
+# установка балансировщика HAproxy
+# репа программы
+# https://github.com/docker-library/haproxy/blob/master/Dockerfile-debian.template
+- name: Install python3-pip
+  apt:
+    name: python3-pip
+    state: present
+    install_recommends: yes
+    update_cache: yes
+
+- name: Install Docker Module for Python
+  pip:
+    name: docker
+
+- name: dhcp list
+  shell:
+    cmd: cat /etc/resolv.conf |grep nameserver |awk '{print $2}'
+  register: dns_serv
+
+- name: create dir for haproxy.cfg
+  file:
+    path: /usr/local/etc/haproxy/
+    state: directory
+
+# генерируем новые конфиги для каждого хоста
+- name: Copy config file /etc/haproxy/haproxy.cfg
+  template:
+    src: "{{ role_path }}/templates/haproxy.j2"
+    dest: /usr/local/etc/haproxy/haproxy.cfg
+    owner: root
+  register: haproxy_conf
+
+# разрешаем привязку системных служб к нелокальному IP-адресу
+- name: ip_nonlocal_bind
+  sysctl:
+    name: net.ipv4.ip_nonlocal_bind
+    value: '1'
+    state: present
+
+# скачиваем последнюю сборку контейнера HA-proxy
+- name: Pull an image HA-proxy
+  docker_image:
+    name: haproxy
+    pull: yes
+
+- name: Start a container HA-proxy
+  docker_container:
+    name: haproxy
+    image: haproxy
+    state: started
+    restart_policy: always
+    ports:
+      - "{{kube_api}}:{{kube_api_port}}:{{kube_api_port}}"
+    volumes:
+      - /usr/local/etc/haproxy/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg

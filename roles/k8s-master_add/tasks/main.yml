@@ -1,0 +1,54 @@
+# Условие вхождения в кластер - наличие файла admin.conf
+# master.stdout = 1
+- name: Find master
+  shell:
+    cmd: ls /etc/kubernetes/ |grep "^admin.conf$" |wc -l
+    executable: /bin/bash
+  register: master
+
+# Config файл - нужен для создания кластера и получения ключа
+# для скачивания сертефикатов по api
+- name: Find config file
+  shell:
+    cmd: ls /etc/kubernetes/ |grep "^config.yaml$" |wc -l
+    executable: /bin/bash
+  register: config
+
+# сохраняем команду для присоединения узла к кластеру
+- name: get kubectl join command 
+  shell:
+    cmd: kubeadm token create --print-join-command
+    executable: /bin/bash
+  run_once: true
+  register: join
+  when: master.stdout == "1" and config.stdout == "1"
+
+# с помощью конфига получем ключ для копирования сертификатов
+- name: get certificate key
+  shell: 
+    cmd: kubeadm init phase upload-certs --upload-certs --config /etc/kubernetes/config.yaml 2>/dev/null|tail -n1
+    executable: /bin/bash
+  run_once: true
+  when: master.stdout == "1" and config.stdout == "1"
+  register: sert_key
+
+# выполняем присоединение к кластеру 
+- name: add new master in cluster
+  shell:
+    cmd: "{{ join.stdout }} --certificate-key {{ sert_key.stdout }} --control-plane"
+    executable: /bin/bash
+  when: master.stdout != "1"
+
+# добавляем переменную для root, чтобы можно было выполнять kubectl
+- name: add variables in /root/.bashrc
+  lineinfile:
+    path: "/root/.bashrc"
+    line: "export KUBECONFIG=/etc/kubernetes/admin.conf"
+  when: master.stdout != "1"
+
+# на всякий случай перечитываем новые переменные
+- name: read new root variables
+  shell:
+    cmd: source ~/.bashrc
+    executable: /bin/bash
+  when: master.stdout != "1"

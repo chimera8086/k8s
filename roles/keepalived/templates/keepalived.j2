@@ -1,0 +1,29 @@
+global_defs {
+  router_id {{inventory_hostname}}
+}
+
+vrrp_script chk_haproxy {
+        script "/etc/keepalived/haproxy_check"
+        interval 2
+        user keepalived_script
+}
+
+vrrp_instance k8s {
+        state {{ keepalived_vrrp_instances.state }}
+        interface {{ keepalived_vrrp_instances.interface }}
+        virtual_router_id {{ keepalived_vrrp_instances.virtual_router_id }}
+        priority {{ keepalived_vrrp_instances.priority }}
+        advert_int 1
+        authentication {
+                auth_type {{ keepalived_vrrp_instances.authentication.auth_type }}
+                auth_pass {{ keepalived_vrrp_instances.authentication.auth_pass }}
+        }
+        virtual_ipaddress {
+               {{ vip_address }}/24
+        }
+        track_script {
+                chk_haproxy
+        }
+
+}
+

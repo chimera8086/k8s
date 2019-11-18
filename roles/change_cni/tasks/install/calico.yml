@@ -1,0 +1,31 @@
+---
+# установить сеть
+- name: set podCIDR
+  shell:
+    cmd: sudo kubeadm init phase control-plane controller-manager --pod-network-cidr={{ kube_pod_net_calico }}
+
+# скачать файл-конфиг 
+- name: Download calico.yaml
+  get_url:
+    url: https://docs.projectcalico.org/manifests/calico.yaml
+    dest: /etc/kubernetes/calico.yaml
+
+# устанавливаем сеть для 
+- name: Set POD network for calico - CALICO_IPV4POOL_CIDR
+  lineinfile:
+    path: /etc/kubernetes/calico.yaml
+    regexp: '# - name: CALICO_IPV4POOL_CIDR'
+    line: '            - name: CALICO_IPV4POOL_CIDR'
+
+# если переменная не переопределена при старте,
+# то берет значение из файла inventory
+- name: Set POD network for calico - value
+  lineinfile:
+    path: /etc/kubernetes/calico.yaml
+    regex: '#   value: "192.168.0.0/16"'
+    line: '              value: "{{ kube_pod_net_calico }}"'
+
+- name: Install calico
+  shell:
+    cmd: kubectl apply -f /etc/kubernetes/calico.yaml
+    executable: /bin/bash

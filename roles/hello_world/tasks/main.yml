@@ -1,0 +1,32 @@
+---
+- name: Create dir for example conf
+  file:
+    path: /etc/kubernetes/example_conf
+    state: directory
+
+- name: Copy config
+  copy:
+    src: "{{ role_path }}/files/{{ item }}"
+    dest: /etc/kubernetes/example_conf/
+  with_items:
+    - hello_world_pod.yml
+    - hello_world_service.yml
+
+- name: Create pod and docker
+  shell:
+    cmd: kubectl apply -f /etc/kubernetes/example_conf/hello_world_pod.yml
+    executable: /bin/bash
+
+- name: Open listen port
+  shell:
+    cmd: kubectl apply -f /etc/kubernetes/example_conf/hello_world_service.yml
+    executable: /bin/bash
+
+- name: Get http
+  shell:
+    cmd: kubectl get pod -o wide |grep hello-world-pod |awk '{print $7}'
+    executable: /bin/bash
+  register: NODE
+
+- debug:
+    msg: "Use the http://{{NODE.stdout}}:31000 to access in a few minutes"

@@ -1,0 +1,10 @@
+# скачать файл-конфиг 
+- name: Download calico.yaml
+  get_url:
+    url: https://docs.projectcalico.org/manifests/calico.yaml
+    dest: /etc/kubernetes/calico.yaml
+
+- name: Install calico
+  shell:
+    cmd: kubectl delete -f /etc/kubernetes/calico.yaml
+    executable: /bin/bash

@@ -1,0 +1,50 @@
+---
+- name: Install keepalived
+  apt:
+    name: keepalived
+    state: present
+    install_recommends: yes
+    force: yes
+    update_cache: yes
+
+# разрешаем привязку системных служб к нелокальному IP-адресу
+- name: ip_nonlocal_bind
+  sysctl:
+    name: net.ipv4.ip_nonlocal_bind
+    value: '1'
+    state: present
+
+- name: Create group keepalived_script
+  group:
+    name: keepalived_script
+    state: present
+
+- name: Create user keepalived_script
+  user:
+    name: keepalived_script
+    state: present
+    system: yes
+    groups: ["keepalived_script"]
+
+# генерируем новые конфиги для каждого хоста
+- name: Copy config file /etc/keepalived/keepalived.conf
+  template:
+    src: "{{ role_path }}/templates/keepalived.j2"
+    dest: /etc/keepalived/keepalived.conf
+    owner: root
+  register: keepalived_conf
+
+- name: Copy check script /etc/keepalived/haproxy_check
+  template:
+    src: "{{ role_path }}/files/haproxy_check"
+    dest: /etc/keepalived/haproxy_check
+    mode: "755"
+    owner: keepalived_script
+
+# рестар, автозапуск keepalived
+- name: enabled keepalived
+  systemd: 
+    name: keepalived
+    state: started
+    enabled: yes
+

@@ -1,0 +1,15 @@
+---
+- name: include replase flannel to '"calico"
+  include_tasks: "{{ role_path }}/tasks/replace/flannel_to_calico.yml"
+  when: '"calico" in install_cni'
+
+# скачать файл-конфиг 
+- name: Download flannel.yml
+  get_url:
+    url: https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
+    dest: /etc/kubernetes/flannel.yml
+
+- name: Вelete flannel
+  shell:
+    cmd: kubectl delete -f /etc/kubernetes/flannel.yml
+    executable: /bin/bash

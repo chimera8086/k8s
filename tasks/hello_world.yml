@@ -1,0 +1,34 @@
+- name: Create Hello world docker
+  hosts: k8s-master
+  roles: 
+    - ../roles/hello_world
+  run_once: true
+  tags: create
+
+- name: Remove Hello world pod and service
+  hosts: k8s-master
+  tasks:
+    - name: remove service
+      shell:
+        cmd: kubectl delete service hello-world-svc
+        executable: /bin/bash
+      run_once: true
+
+    - name: remove pod
+      shell:
+        cmd: kubectl delete pod hello-world-pod
+        executable: /bin/bash
+      run_once: true
+
+    - name: find config dir
+      shell:
+        cmd: ls /etc/kubernetes/ |grep "^example_conf$" |wc -l
+        executable: /bin/bash
+      register: config_dir
+
+    - name: remove example_conf dir
+      file:
+        path: /etc/kubernetes/example_conf
+        state: absent
+      when: config_dir.stdout == "1"
+  tags: remove

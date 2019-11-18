@@ -1,0 +1,74 @@
+- name: etcd init
+  hosts: etcd
+  roles:
+    - docker
+    - etcd
+  tags: 
+    - develop
+
+- name: High-Availability
+  hosts: ha-proxy
+  roles:
+    - docker
+    - haproxy
+    - keepalived
+  tags: 
+    - master_add
+
+# перезагрузка будет в случае, если у нас изменился конфиг 
+- name: High-Availability rester
+  hosts: ha-proxy
+  serial: 1
+  tasks:
+    - name: Restart keepalived
+      systemd: 
+        name: keepalived
+        state: restarted
+      when: keepalived_conf.changed
+
+    - name: Restart a haproxy
+      docker_container:
+        name: haproxy
+        image: haproxy
+        state: started
+        restart_policy: always
+        ports:
+          - "{{kube_api}}:{{kube_api_port}}:{{kube_api_port}}"
+        volumes:
+          - /usr/local/etc/haproxy/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg
+      when: haproxy_conf.changed
+  tags:
+    - master_add
+
+- name: k8s soft install
+  hosts:
+    - k8s-master
+    - k8s-worker
+  roles:
+    - docker
+    - k8s-soft
+  tags:
+    - master_add
+    - worker_add
+
+- name: k8s claster init
+  hosts: k8s-master
+  roles: 
+    - k8s-init
+
+
+- name: k8s add master
+  hosts:
+    - k8s-master
+  roles:
+    - k8s-master_add
+  tags:
+    - master_add
+
+- name: k8s add worker
+  hosts:
+    - k8s-worker
+  roles:
+    - k8s-worker_add
+  tags:
+    - worker_add
