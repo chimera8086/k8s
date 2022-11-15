@@ -34,6 +34,31 @@
       - containerd.io
     install_recommends: yes
 
+
+######## System config ###########
+# включить передачу пакетов
+- name: forward enabled
+  sysctl:
+    name: "{{ item }}"
+    value: '1'
+    sysctl_set: yes
+    state: present
+    reload: yes
+  with_items: 
+    - net.ipv4.ip_forward
+    - net.bridge.bridge-nf-call-iptables
+    # - net.bridge.bridge-nf-call-ip6tables=1
+
+- name: modprobe br_netfilter
+  modprobe:
+    name: "{{ item }}"
+    state: present
+  with_items: 
+    - br_netfilter
+    - overlay
+
+
+######### Config docker ###########
 # файл с настройкой работы cgroups
 - name: deamon.json
   copy:
@@ -41,10 +66,32 @@
     dest: "/etc/docker/daemon.json"
   register: file_copy
 
+
+######### Contsinerd config ##########
+- name: containerd config dir
+  file:
+    state: directory
+    path: /etc/containerd/
+
+- name: containerd config default
+  shell:
+    cmd: containerd config default > /etc/containerd/config.toml
+
+- name: Set configd SystemdCgroup = true  
+  ansible.builtin.lineinfile:
+    path: /etc/containerd/config.toml
+    regexp: 'SystemdCgroup = '
+    line: SystemdCgroup = true
+  register: containerd_config
+
+######### Restart service ##########s
 # подхватить изменения, если файл изменили
 - name: restart docker service
   systemd:
-    name: docker
+    name: "{{ item.daemon }}"
     state: restarted
     enabled: yes
-  when: file_copy.changed
+  when: "{{ item.file }}"
+  with_items: 
+    - { daemon: "docker", file: "file_copy.changed" }
+    - { daemon: "containerd", file: "containerd_config.changed" }

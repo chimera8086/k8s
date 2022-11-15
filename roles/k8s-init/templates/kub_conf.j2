@@ -1,4 +1,11 @@
-apiVersion: kubeadm.k8s.io/v1beta2
+apiVersion: kubeadm.k8s.io/v1beta3
+kind: InitConfiguration
+localAPIEndpoint:
+  advertiseAddress: "{{kube_api}}"
+nodeRegistration:
+  criSocket: "unix:///var/run/containerd/containerd.sock"
+---
+apiVersion: kubeadm.k8s.io/v1beta3
 kind: ClusterConfiguration
 kubernetesVersion: stable
 controlPlaneEndpoint: "{{kube_api}}:{{kube_api_port}}"

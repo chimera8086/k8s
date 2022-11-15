@@ -6,6 +6,8 @@ all:
     kube_api: "10.10.20.30"
     kube_api_port: "6443"
     kube_pod_net_calico: "10.11.0.0/16"
+    kube_version: "1.24.7-00"
+    kube_weave_version: "v2.8.1"
 
     etcd_port: "2380"
     etcd_client: "2379"
@@ -20,6 +22,7 @@ all:
         kworker1:
     ha-proxy:
       vars:
+        docker_version: "alpine3.16"
         vip_address: "{{ kube_api }}"
         keepalived_vrrp_instances:
           state: "MASTER"
@@ -36,7 +39,7 @@ all:
         etcd3:
     etcd:
       vars:
-        virsion: "3.4.7"
+        virsion: "3.5.3"
         token: etcd-cluster-1
       hosts:
         etcd-1:

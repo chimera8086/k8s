@@ -31,6 +31,8 @@
     owner: root
   register: haproxy_conf
 
+#- name: Fix 
+
 # разрешаем привязку системных служб к нелокальному IP-адресу
 - name: ip_nonlocal_bind
   sysctl:
@@ -47,10 +49,11 @@
 - name: Start a container HA-proxy
   docker_container:
     name: haproxy
-    image: haproxy
+    image: "haproxy:{{docker_version}}"
     state: started
     restart_policy: always
     ports:
       - "{{kube_api}}:{{kube_api_port}}:{{kube_api_port}}"
     volumes:
       - /usr/local/etc/haproxy/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg
+      

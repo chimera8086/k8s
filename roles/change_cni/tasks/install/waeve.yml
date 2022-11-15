@@ -6,5 +6,5 @@
 
 - name: deploy a pod network to the cluster
   shell:
-    cmd: /usr/bin/kubectl apply -f "https://cloud.weave.works/k8s/net?k8s-version={{ kubectl_version.stdout }}"
+    cmd: /usr/bin/kubectl --kubeconfig /etc/kubernetes/admin.conf apply -f https://github.com/weaveworks/weave/releases/download/{{kube_weave_version}}/weave-daemonset-k8s.yaml
     chdir: /etc/kubernetes/
