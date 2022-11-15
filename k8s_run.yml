@@ -3,8 +3,6 @@
   roles:
     - docker
     - etcd
-  tags: 
-    - develop
 
 - name: High-Availability
   hosts: ha-proxy

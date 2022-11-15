@@ -49,7 +49,7 @@
 - name: install kubelet, kubeadm, kubectl
   apt:
     pkg:
-      - kubeadm
-      - kubelet
-      - kubectl
+      - kubeadm={{ kube_version }}
+      - kubelet={{ kube_version }}
+      - kubectl={{ kube_version }}
     state: present
